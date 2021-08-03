@@ -1,4 +1,3 @@
-from __init__ import app, bot
-
+from bot.server import app
 
 app.run()

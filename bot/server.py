@@ -1,5 +1,7 @@
-from flask import Flask, request
-from __init__ import app, bot
+from flask import request, Flask
+from bot import bot
+
+app = Flask(__name__)
 
 
 @app.route('/bot', methods=['POST'])
@@ -12,7 +14,6 @@ def get_webhooks():
         user = data['value']['user_id']
         author = data['value']['author_id']
         if user != author:
-            bot.read_chat(chat, user)
             bot.message_handler(chat, user, text)
         else:
             print("avito kaif")
