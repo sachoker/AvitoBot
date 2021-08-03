@@ -9,7 +9,7 @@ class AvitoBot:
         self.avitoapikey = None
         self.get_avito_key()
         self.names = []
-        for i in self.get_all_chats('169306001'):
+        for i in self.get_all_chats('204902716'):
             if i['id'] != 'u2i-2191175409-187456116':
                 self.names.append(i['id'])
 
