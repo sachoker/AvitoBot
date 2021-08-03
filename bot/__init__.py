@@ -1,11 +1,12 @@
 from bot.AvitoBot import AvitoBot
-from openpyxl import load_workbook
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
+sched = BackgroundScheduler()
 client_id = "-iJiRUw8U1NukcfLAFzg"
 client_secret = "QRdEx3eJAWYrLvbloIZZNdQWqnDGrPi0fYNoqJyW"
-base = load_workbook("База для бота.xlsx").active
 
-bot = AvitoBot(client_id, client_secret, base)
+bot = AvitoBot(client_id, client_secret)
 bot.get_webhooks()
+sched.add_job(bot.get_avito_key, 'interval', minutes=55)
 
