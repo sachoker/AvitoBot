@@ -21,7 +21,7 @@ class AvitoBot:
     def get_webhooks(self):
         avitowebhook = 'https://api.avito.ru/messenger/v2/webhook'
         header = {'Authorization': 'Bearer ' + self.avitoapikey}
-        payload = {'url': 'http://6b3b66dbc2ab.ngrok.io/bot'}
+        payload = {'url': 'https://eazy-avito-bot.herokuapp.com/bot'}
         resp = post(avitowebhook, headers=header, json=payload)
 
     def send_message(self, chat_id, user_id, text):
