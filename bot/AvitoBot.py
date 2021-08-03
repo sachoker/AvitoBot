@@ -34,10 +34,10 @@ class AvitoBot:
         if chat_id not in self.names:
             self.names.append(chat_id)
             self.send_message(chat_id, user_id, 'Здравствуйте')
-            sleep(2)
+            sleep(5)
             self.send_message(chat_id, user_id,
                               'Если Вы это не написали, укажите марку модель, год выпуска автомобиля и высоту проставок.')
-            sleep(2)
+            sleep(5)
             self.send_message(chat_id, user_id, 'Я чуть позже пришлю фото и цены')
             self.read_chat(chat_id, user_id)
         return 1
