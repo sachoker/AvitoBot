@@ -1,1 +1,1 @@
-web: gunicorn eazybot:run
+web: gunicorn bot:run
