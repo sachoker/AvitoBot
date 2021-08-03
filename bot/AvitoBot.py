@@ -1,6 +1,5 @@
 from requests import get, post
 from time import sleep
-import collections
 
 
 class AvitoBot:

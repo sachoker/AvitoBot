@@ -1,5 +1,5 @@
 from flask import Flask
-from AvitoBot import AvitoBot
+from bot.AvitoBot import AvitoBot
 from openpyxl import load_workbook
 
 client_id = "-iJiRUw8U1NukcfLAFzg"
