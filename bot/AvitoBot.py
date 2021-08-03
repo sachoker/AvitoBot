@@ -37,7 +37,7 @@ class AvitoBot:
             sleep(5)
             self.send_message(chat_id, user_id,
                               'Если Вы это не написали, укажите марку модель, год выпуска автомобиля и высоту проставок.')
-            sleep(5)
+            sleep(10)
             self.send_message(chat_id, user_id, 'Я чуть позже пришлю фото и цены')
             self.read_chat(chat_id, user_id)
         return 1
