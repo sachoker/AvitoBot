@@ -1,5 +1,7 @@
 from requests import get, post
 from time import sleep
+from loger import get_logger
+from json import JSONDecodeError
 
 
 class AvitoBot:
@@ -9,26 +11,36 @@ class AvitoBot:
         self.avitoapikey = None
         self.get_avito_key()
         self.names = []
+        self.logger = get_logger(__name__)
         for i in self.get_all_chats('204902716'):
             if i['id'] != 'u2i-2191175409-187456116':
                 self.names.append(i['id'])
+        self.logger.info(self.names)
 
     def get_avito_key(self):
-        self.avitoapikey = get(
-            f'https://api.avito.ru/token/?grant_type=client_credentials&client_id={self.client_id}&client_secret={self.client_secret}').json()[
-            "access_token"]
+        try:
+            resp = get(
+                f'https://api.avito.ru/token/?grant_type=client_credentials&client_id={self.client_id}&client_secret={self.client_secret}').json()
+        except JSONDecodeError:
+            self.logger.error('JSONDecodeError on get_avito_key')
+            resp = get(
+                f'https://api.avito.ru/token/?grant_type=client_credentials&client_id={self.client_id}&client_secret={self.client_secret}').json()
+        self.avitoapikey = resp["access_token"]
+        self.logger.info(resp)
 
     def get_webhooks(self):
         avitowebhook = 'https://api.avito.ru/messenger/v2/webhook'
         header = {'Authorization': 'Bearer ' + self.avitoapikey}
         payload = {'url': 'https://eazy-avito-bot.herokuapp.com/bot'}
         resp = post(avitowebhook, headers=header, json=payload)
+        self.logger.info(resp)
 
     def send_message(self, chat_id, user_id, text):
         header = {'Authorization': 'Bearer ' + self.avitoapikey}
         payload = {"type": "text", "message": {"text": text}}
         ans = post(f"https://api.avito.ru/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages", headers=header,
                    json=payload)
+        self.logger.info(ans)
 
     def message_handler(self, chat_id, user_id, text):
         if chat_id not in self.names:
@@ -40,6 +52,7 @@ class AvitoBot:
             sleep(8)
             self.send_message(chat_id, user_id, 'Я чуть позже пришлю фото и цены')
             self.read_chat(chat_id, user_id)
+            self.logger.info(chat_id)
         return 1
 
     def read_chat(self, chat_id, user_id):
