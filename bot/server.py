@@ -1,7 +1,7 @@
 from flask import request, Flask
 from bot import bot
 from threading import Thread
-from loger import get_logger
+from bot.loger import get_logger
 
 app = Flask(__name__)
 logger = get_logger(__name__)

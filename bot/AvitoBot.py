@@ -1,6 +1,6 @@
 from requests import get, post
 from time import sleep
-from loger import get_logger
+from bot.loger import get_logger
 from json import JSONDecodeError
 
 
@@ -8,13 +8,14 @@ class AvitoBot:
     def __init__(self, client_id, client_secret):
         self.client_id = client_id
         self.client_secret = client_secret
+        self.logger = get_logger(__name__)
         self.avitoapikey = None
         self.get_avito_key()
         self.names = []
-        self.logger = get_logger(__name__)
+
+        #'169306001'
         for i in self.get_all_chats('204902716'):
-            if i['id'] != 'u2i-2191175409-187456116':
-                self.names.append(i['id'])
+            self.names.append(i['id'])
         self.logger.info(self.names)
 
     def get_avito_key(self):
@@ -31,7 +32,7 @@ class AvitoBot:
     def get_webhooks(self):
         avitowebhook = 'https://api.avito.ru/messenger/v2/webhook'
         header = {'Authorization': 'Bearer ' + self.avitoapikey}
-        payload = {'url': 'https://eazy-avito-bot.herokuapp.com/bot'}
+        payload = {'url': 'http://3064ce44248a.ngrok.io/bot'}
         resp = post(avitowebhook, headers=header, json=payload)
         self.logger.info(resp)
 
