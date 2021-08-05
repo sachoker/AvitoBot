@@ -14,7 +14,6 @@ class AvitoBot:
         self.get_avito_key()
         self.names = []
         self.base = base
-
         #'169306001'
         for i in self.get_all_chats('204902716'):
             self.names.append(i['id'])
@@ -46,7 +45,7 @@ class AvitoBot:
         self.logger.info(ans)
 
     def message_handler(self, chat_id, user_id, text):
-        if chat_id in self.handlers.keys():
+        if chat_id in self.handlers.keys() and chat_id not in self.names:
             try:
                 answer = self.handlers[chat_id].send(text)
             except StopIteration:
