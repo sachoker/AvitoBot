@@ -41,6 +41,9 @@ class AvitoBot:
         payload = {"type": "text", "message": {"text": text}}
         ans = post(f"https://api.avito.ru/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages", headers=header,
                    json=payload)
+        if ans.status_code == 403:
+            self.get_avito_key()
+            self.send_message(chat_id, user_id, text)
         self.logger.info(ans)
 
     def message_handler(self, chat_id, user_id, text):
