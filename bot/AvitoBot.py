@@ -14,8 +14,8 @@ class AvitoBot:
         self.get_avito_key()
         self.names = []
         self.base = base
-        #'169306001'
-        for i in self.get_all_chats('204902716'):
+        #'204902716'
+        for i in self.get_all_chats('169306001'):
             self.names.append(i['id'])
         self.handlers = collections.defaultdict(generator)
 
@@ -33,7 +33,7 @@ class AvitoBot:
     def get_webhooks(self):
         avitowebhook = 'https://api.avito.ru/messenger/v2/webhook'
         header = {'Authorization': 'Bearer ' + self.avitoapikey}
-        payload = {'url': 'http://3064ce44248a.ngrok.io/bot'}
+        payload = {'url': 'http://79ad9a29f699.ngrok.io/bot'}
         resp = post(avitowebhook, headers=header, json=payload)
         self.logger.info(resp)
 
@@ -45,7 +45,7 @@ class AvitoBot:
         self.logger.info(ans)
 
     def message_handler(self, chat_id, user_id, text):
-        if chat_id in self.handlers.keys() and chat_id not in self.names:
+        if chat_id in self.handlers.keys() and chat_id in self.names:
             try:
                 answer = self.handlers[chat_id].send(text)
             except StopIteration:

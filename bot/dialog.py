@@ -1,5 +1,10 @@
-from checker import check_all, check_one
+from bot.checker import check_one
 from bot import base
+from bot.loger import get_logger
+from openpyxl import load_workbook
+from datetime import datetime
+
+logger = get_logger(__name__)
 
 
 class Prostavka:
@@ -10,30 +15,68 @@ class Prostavka:
         self.krep = krep
         self.comment = comment
         self.photo = photo
+        self.cost = 0
+
+    def set_height(self, height):
+        self.height = height
+
+    def set_cost(self, cost: int):
+        self.cost = cost
+
+
+class Client:
+    mark = ''
+    model = None
+    generation = None
+    modification = None
+    prostavki = {}
+    cost = 0
+
+    def write_itog(self):
+        book = load_workbook(r"C:\Users\mv149\PycharmProjects\eazybot\Карточка клиента.xlsx")
+        cards = book.get_sheet_by_name(book.get_sheet_names()[0])
+        now = datetime.now().strftime("%d-%m-%Y")
+        cards.append([cards.max_row - 2, now, self.generation, self.mark, self.model, self.modification,
+                      self.prostavki.get('Передние проставки', ['Нет'])[0],
+                      self.prostavki.get('Передние проставки', ['Нет'])[1],
+                      self.prostavki.get('Задние проставки', ['Нет'])[0],
+                      self.prostavki.get('Задние проставки', ['Нет'])[1],
+                      self.prostavki.get('Удлинители', ['Нет'])[0],
+                      self.prostavki.get('Удлинители', ['Нет'])[1],
+                      self.prostavki.get('Передние проставки', ['Нет'])[2],
+                      self.prostavki.get('Задние проставки', ['Нет'])[2],
+                      self.prostavki.get('Удлинители', ['Нет'])[2],
+                      0,
+                      self.cost
+                      ])
+        book.save('Карточка клиента.xlsx')
 
 
 def dialog():
-    answer = yield "Здравствуйте, для заказа напишите марку и модель вашей машины в виде \"марка, модель\""
-    carmark, carname = answer.rstrip('.!').split(',')
-    carmarkt = check_one(carmark)
-    carnamet = check_one(carname, 'en_ZA')
-    car = carmarkt + ' ' + carnamet
-    if check_again(car):
-        answer = yield from generations(car)
+    car = yield "Здравствуйте, для заказа напишите марку и модель вашей машины в виде \"марка модель\" (например Volvo C30, тойота камри)"
+    cars = check_one(car)
+    logger.info(car)
+    logger.info(cars)
+    s = 'Выберите подходящий вариант:\n'
+    for cnt, i in enumerate(cars):
+        s = s + f'{cnt + 1}) ' + i[0]
+    ans = yield s
+    car = cars[int(ans) - 1][0][:-1]
+    client = Client()
+    client.model = car
+    for i in client.model.split()[:-1]:
+        client.mark += i
+    yield from generations(client, car)
 
 
-def check_again(sugestion):
-    answer = yield f"Вы имели в виду {sugestion}?"
-    while not ("да" in answer.lower() or "нет" in answer.lower()):
-        answer = yield "Да или нет?"
-    return 'да' in answer.lower()
-
-
-def generations(car):
+def generations(client, car):
     gen = []
+    logger.info(car)
     for i in list(base.iter_cols(min_col=2, max_col=2))[0]:
-        if i.value == car:
-            gen.append(base.cell(i.row, i.col_index + 1).value)
+        val = base.cell(i.row, i.col_idx + 1).value
+        if i.value == car and val not in gen:
+            gen.append(val)
+    logger.info(gen)
     if len(gen) > 1:
         s = ''
         for cnt, i in enumerate(gen):
@@ -41,16 +84,19 @@ def generations(car):
         ans = yield "Выберите поколение вашего автомобиля(напишите его номер):\n" + s
         ans = int(ans)
         ans = gen[ans - 1]
-        yield from modif(ans)
+        client.generation = ans
+        yield from modif(client, ans)
     else:
-        yield from modif(gen[0])
+        client.generation = gen[0]
+        yield from modif(client, gen[0])
 
 
-def modif(gen):
+def modif(client, gen):
     mod = []
     for i in list(base.iter_cols(min_col=3, max_col=3))[0]:
-        if i.value == gen:
-            mod.append(base.cell(i.row, i.col_index + 1).value)
+        val = base.cell(i.row, i.col_idx + 1).value
+        if i.value == gen and val not in mod:
+            mod.append(val)
     if len(mod) > 1:
         s = ''
         for cnt, i in enumerate(mod):
@@ -58,25 +104,27 @@ def modif(gen):
         ans = yield "Выберите модификацию вашего автомобиля(напишите его номер):\n" + s
         ans = int(ans)
         ans = mod[ans - 1]
-        yield from choose_direction(ans)
+        client.modification = ans
+        yield from choose_direction(client, ans)
     else:
-        yield from choose_direction(mod[0])
+        client.modification = mod[0]
+        yield from choose_direction(client, mod[0])
 
 
-def choose_direction(mod):
+def choose_direction(client, mod):
     dir = []
     prostavki = []
     for i in list(base.iter_cols(min_col=4, max_col=4))[0]:
-        if i.value == mod:
-            name = base.cell(i.row, i.col_index + 1).value
+        name = base.cell(i.row, i.col_idx + 1).value
+        if i.value == mod and name not in dir:
             dir.append(name)
             prostavki.append(Prostavka(name,
-                                       [int(base.cell(i.row, i.col_index + 4).value),
-                                        int(base.cell(i.row, i.col_index + 5).value),
-                                        int(base.cell(i.row, i.col_index + 6).value),
-                                        int(base.cell(i.row, i.col_index + 7).value)],
-                                       base.cell(i.row, i.col_index + 2).value, base.cell(i.row, i.col_index + 3),
-                                       base.cell(i.row, i.col_index + 8), base.cell(i.row, i.col_index + 9)
+                                       [int(base.cell(i.row, i.col_idx + 4).value or 0),
+                                        int(base.cell(i.row, i.col_idx + 5).value or 0),
+                                        int(base.cell(i.row, i.col_idx + 6).value or 0),
+                                        int(base.cell(i.row, i.col_idx + 7).value or 0)],
+                                       base.cell(i.row, i.col_idx + 2).value, base.cell(i.row, i.col_idx + 3),
+                                       base.cell(i.row, i.col_idx + 8), base.cell(i.row, i.col_idx + 9)
                                        ))
     if len(dir) == 2:
         s = ''
@@ -84,9 +132,8 @@ def choose_direction(mod):
         for cnt, i in enumerate(dir):
             s = s + str(cnt + 1) + ')' + f' {i}\n'
         ans = yield "Выберите тип проставок вашего автомобиля(напишите его номер):\n" + s
-        ans = int(ans)
-        ans -= 1
-        yield from get_height(prostavki, dir[ans])
+        ans = int(ans) - 1
+        yield from get_height(client, prostavki, dir[ans])
     elif len(dir) == 3:
         s = ''
         dir.append("Передние и задние")
@@ -94,17 +141,20 @@ def choose_direction(mod):
         for cnt, i in enumerate(dir):
             s = s + str(cnt + 1) + ')' + f' {i}\n'
         ans = yield "Выберите тип проставок вашего автомобиля(напишите его номер):\n" + s
-        yield from get_height(prostavki, dir[ans])
+        ans = int(ans) - 1
+        yield from get_height(client, prostavki, dir[ans])
     else:
-        yield from get_height(prostavki, dir[0])
+        yield from get_height(client, prostavki, dir[0])
 
 
-def get_height(prostavki, dir):
+def get_height(client, prostavki, dir):
     heights = []
     costs = []
+    itog = []
     if dir == 'Передние проставки' or dir == 'Задние проставки' or dir == 'Удлинители':
         for i in prostavki:
             if i.name == dir:
+                itog.append(i)
                 for cnt, j in enumerate(i.costs):
                     if j:
                         heights.append(f'{cnt + 2}0mm')
@@ -112,6 +162,7 @@ def get_height(prostavki, dir):
     elif dir == 'Передние и задние':
         for i in prostavki:
             if i.name == 'Передние проставки' or i.name == 'Задние проставки':
+                itog.append(i)
                 for cnt, j in enumerate(i.costs):
                     if j:
                         try:
@@ -121,6 +172,7 @@ def get_height(prostavki, dir):
                             heights.append(f'{cnt + 2}0mm')
     else:
         for i in prostavki:
+            itog.append(i)
             for cnt, j in enumerate(i.costs):
                 if j:
                     try:
@@ -133,7 +185,14 @@ def get_height(prostavki, dir):
         s = s + str(cnt + 1) + ')' + f' {h}\n'
     ans = yield 'Выберите высоту проставки:\n' + s
     ans = int(ans) - 1
+    h = heights[ans]
+    for i in itog:
+        i.set_height(h)
+        i.set_cost(i.costs[ans])
+        client.prostavki.update({i.name: (i.height, i.articul, i.cost)})
     cost = costs[ans]
+    client.cost = costs[ans]
+    client.write_itog()
     yield from get_itog(cost)
 
 
