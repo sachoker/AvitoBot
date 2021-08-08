@@ -9,6 +9,10 @@ class AvitoBot:
     def __init__(self, client_id, client_secret, generator, base):
         self.client_id = client_id
         self.client_secret = client_secret
+        self.sdek_client_id = ''
+        self.sdek_client_secret = ''
+        self.sdek_key = None
+        # self.get_sdek_key()
         self.logger = get_logger(__name__)
         self.avitoapikey = None
         self.get_avito_key()
@@ -17,6 +21,7 @@ class AvitoBot:
         #'204902716'
         for i in self.get_all_chats('169306001'):
             self.names.append(i['id'])
+        self.names.remove('u2i-2191175409-187456116')
         self.handlers = collections.defaultdict(generator)
 
     def get_avito_key(self):
@@ -30,10 +35,14 @@ class AvitoBot:
         self.avitoapikey = resp["access_token"]
         self.logger.info(resp)
 
+    def get_sdek_key(self):
+        params = {'grant_type': 'client_credentials', 'client_id': self.sdek_client_id, 'client_secret': self.sdek_client_secret}
+        self.sdek_key = 'Bearer' + get('https://api.cdek.ru/v2/oauth/token', params=params).json()['access_token']
+
     def get_webhooks(self):
         avitowebhook = 'https://api.avito.ru/messenger/v2/webhook'
         header = {'Authorization': 'Bearer ' + self.avitoapikey}
-        payload = {'url': 'http://79ad9a29f699.ngrok.io/bot'}
+        payload = {'url': 'http://99b11ff9a78e.ngrok.io/bot'}
         resp = post(avitowebhook, headers=header, json=payload)
         self.logger.info(resp)
 
@@ -45,15 +54,19 @@ class AvitoBot:
         self.logger.info(ans)
 
     def message_handler(self, chat_id, user_id, text):
-        if chat_id in self.handlers.keys() and chat_id in self.names:
+        self.logger.info(text)
+        if chat_id in self.names:
+            pass
+        elif chat_id in self.handlers.keys():
             try:
                 answer = self.handlers[chat_id].send(text)
+                self.send_message(chat_id, user_id, answer)
             except StopIteration:
                 del self.handlers[chat_id]
-                return self.message_handler(chat_id, user_id, text)
+                self.names.append(chat_id)
         else:
             answer = next(self.handlers[chat_id])
-        self.send_message(chat_id, user_id, answer)
+            self.send_message(chat_id, user_id, answer)
         return 1
 
     def read_chat(self, chat_id, user_id):

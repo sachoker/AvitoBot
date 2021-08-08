@@ -1,8 +1,8 @@
 from bot.checker import check_one
-from bot import base
+from bot import base, ROOT_DIR
 from bot.loger import get_logger
-from openpyxl import load_workbook
 from datetime import datetime
+import gspread
 
 logger = get_logger(__name__)
 
@@ -31,31 +31,53 @@ class Client:
     modification = None
     prostavki = {}
     cost = 0
+    comment = ''
+    name = ''
+    index = 0
+    address = ''
+    phone = ''
+    chat_id = ''
+
+    def __init__(self):
+        self.gc = gc = gspread.service_account(filename=fr'{ROOT_DIR}\root-finder-311719-de7496d4f565.json')
+        self.sh = gc.open("Карточка клиента").sheet1
 
     def write_itog(self):
-        book = load_workbook(r"C:\Users\mv149\PycharmProjects\eazybot\Карточка клиента.xlsx")
-        cards = book.get_sheet_by_name(book.get_sheet_names()[0])
         now = datetime.now().strftime("%d-%m-%Y")
-        cards.append([cards.max_row - 2, now, self.generation, self.mark, self.model, self.modification,
-                      self.prostavki.get('Передние проставки', ['Нет'])[0],
-                      self.prostavki.get('Передние проставки', ['Нет'])[1],
-                      self.prostavki.get('Задние проставки', ['Нет'])[0],
-                      self.prostavki.get('Задние проставки', ['Нет'])[1],
-                      self.prostavki.get('Удлинители', ['Нет'])[0],
-                      self.prostavki.get('Удлинители', ['Нет'])[1],
-                      self.prostavki.get('Передние проставки', ['Нет'])[2],
-                      self.prostavki.get('Задние проставки', ['Нет'])[2],
-                      self.prostavki.get('Удлинители', ['Нет'])[2],
-                      0,
-                      self.cost
-                      ])
-        book.save('Карточка клиента.xlsx')
+        self.sh.append_row([self.chat_id, now, self.generation, self.mark, self.model, self.modification,
+                            self.prostavki.get('Передние проставки', ['Нет', 'Нет', 'Нет'])[0],
+                            self.prostavki.get('Передние проставки', ['Нет', 'Нет', 'Нет'])[1],
+                            self.prostavki.get('Задние проставки', ['Нет', 'Нет', 'Нет'])[0],
+                            self.prostavki.get('Задние проставки', ['Нет', 'Нет', 'Нет'])[1],
+                            self.prostavki.get('Удлинители', ['Нет', 'Нет', 'Нет'])[0],
+                            self.prostavki.get('Удлинители', ['Нет', 'Нет', 'Нет'])[1],
+                            self.prostavki.get('Передние проставки', ['Нет', 'Нет', 'Нет'])[2],
+                            self.prostavki.get('Задние проставки', ['Нет', 'Нет', 'Нет'])[2],
+                            self.prostavki.get('Удлинители', ['Нет', 'Нет', 'Нет'])[2],
+                            0,
+                            self.cost,
+                            self.comment,
+                            'Avito',
+                            None,
+                            None,
+                            self.phone,
+                            self.name,
+                            self.index,
+                            self.address,
+                            ])
+
+    def add_prostavrka(self, prostavka: Prostavka):
+        self.prostavki.update({prostavka.name: [prostavka.height, prostavka.articul, prostavka.cost]})
+
+    def calculate_cost(self):
+        for i in self.prostavki.values():
+            self.cost += i[2]
 
 
 def dialog():
     car = yield "Здравствуйте, для заказа напишите марку и модель вашей машины в виде \"марка модель\" (например Volvo C30, тойота камри)"
-    cars = check_one(car)
     logger.info(car)
+    cars = check_one(car)
     logger.info(cars)
     s = 'Выберите подходящий вариант:\n'
     for cnt, i in enumerate(cars):
@@ -124,7 +146,8 @@ def choose_direction(client, mod):
                                         int(base.cell(i.row, i.col_idx + 6).value or 0),
                                         int(base.cell(i.row, i.col_idx + 7).value or 0)],
                                        base.cell(i.row, i.col_idx + 2).value, base.cell(i.row, i.col_idx + 3),
-                                       base.cell(i.row, i.col_idx + 8), base.cell(i.row, i.col_idx + 9)
+                                       base.cell(i.row, i.col_idx + 8), base.cell(i.row, i.col_idx + 9),
+
                                        ))
     if len(dir) == 2:
         s = ''
@@ -148,53 +171,70 @@ def choose_direction(client, mod):
 
 
 def get_height(client, prostavki, dir):
-    heights = []
-    costs = []
     itog = []
     if dir == 'Передние проставки' or dir == 'Задние проставки' or dir == 'Удлинители':
         for i in prostavki:
             if i.name == dir:
-                itog.append(i)
+                s = ''
                 for cnt, j in enumerate(i.costs):
                     if j:
-                        heights.append(f'{cnt + 2}0mm')
-                        costs.append(j)
+                        s += f'{cnt + 1})' + f'{cnt + 2}0mm\n'
+                h = yield f'Выберите высоту {dir}:\n' + s
+                h = int(h) - 1
+                i.set_height(f'{h + 2}0mm')
+                i.set_cost(i.costs[h])
+                itog.append(i)
+
     elif dir == 'Передние и задние':
         for i in prostavki:
             if i.name == 'Передние проставки' or i.name == 'Задние проставки':
-                itog.append(i)
+                s = ''
                 for cnt, j in enumerate(i.costs):
                     if j:
-                        try:
-                            costs[cnt] += j
-                        except:
-                            costs.append(j)
-                            heights.append(f'{cnt + 2}0mm')
+                        s += f'{cnt + 1})' + f'{cnt + 2}0mm\n'
+                h = yield f'Выберите высоту {i.name}:\n' + s
+                h = int(h) - 1
+                i.set_height(f'{h + 2}0mm')
+                i.set_cost(i.costs[h])
+                itog.append(i)
+
     else:
         for i in prostavki:
-            itog.append(i)
+            s = ''
             for cnt, j in enumerate(i.costs):
                 if j:
-                    try:
-                        costs[cnt] += j
-                    except:
-                        costs.append(j)
-                        heights.append(f'{cnt + 2}0mm')
-    s = ''
-    for cnt, h in enumerate(heights):
-        s = s + str(cnt + 1) + ')' + f' {h}\n'
-    ans = yield 'Выберите высоту проставки:\n' + s
-    ans = int(ans) - 1
-    h = heights[ans]
+                    s += f'{cnt + 1})' + f'{cnt + 2}0mm\n'
+            h = yield f'Выберите высоту {i.name}:\n' + s
+            h = int(h) - 1
+            i.set_height(f'{h + 2}0mm')
+            i.set_cost(i.costs[h])
+            itog.append(i)
     for i in itog:
-        i.set_height(h)
-        i.set_cost(i.costs[ans])
-        client.prostavki.update({i.name: (i.height, i.articul, i.cost)})
-    cost = costs[ans]
-    client.cost = costs[ans]
+        client.add_prostavrka(i)
+    client.calculate_cost()
+    yield from get_dostavka(client)
+
+
+def get_dostavka(client: Client):
+    s = f'Ваш заказ:\n{client.modification}\n'
+    for cnt, i in enumerate(client.prostavki.items()):
+        s += f'{cnt + 1})' + i[0] + i[1][0] + str(i[1][2]) + '\n'
+    s += f'Общая стоймость:{client.cost}\n'
+    s += 'Если у вас есть вопрос или коментарий для меня, напишите его, если нет, то напишите \"нет\"'
+    ans = yield s
+    client.comment = ans
+    s = 'Доставка осуществляется с помощью сдэк, для заготовки к оформлению введите ваше ФИО'
+    ans = yield s
+    client.name = ans
+    ans = yield 'Введите свой номер телефона'
+    client.phone = ans
+    ans = yield 'Введите почтовый индекс'
+    client.index = int(ans)
+    ans = yield 'Введите адрес пункта сдэк'
+    client.address = ans
     client.write_itog()
-    yield from get_itog(cost)
+    yield from get_itog(client)
 
 
-def get_itog(cost):
-    yield f"Итоговая цена {cost}"
+def get_itog(client):
+    yield f"Итоговая цена {client.cost}"
