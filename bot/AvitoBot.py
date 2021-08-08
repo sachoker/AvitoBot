@@ -11,6 +11,7 @@ class AvitoBot:
         self.client_secret = client_secret
         self.sdek_client_id = ''
         self.sdek_client_secret = ''
+        self.postal_from = ''
         self.sdek_key = None
         # self.get_sdek_key()
         self.logger = get_logger(__name__)
@@ -37,7 +38,13 @@ class AvitoBot:
 
     def get_sdek_key(self):
         params = {'grant_type': 'client_credentials', 'client_id': self.sdek_client_id, 'client_secret': self.sdek_client_secret}
-        self.sdek_key = 'Bearer' + get('https://api.cdek.ru/v2/oauth/token', params=params).json()['access_token']
+        self.sdek_key = 'Bearer ' + get('https://api.cdek.ru/v2/oauth/token', params=params).json()['access_token']
+
+    def get_sdek_price(self, address):
+        header = {'Authorization': self.sdek_key}
+        payload = {'tariff_code': 136, 'from_location': {'postal_code': self.postal_from}, 'to_location': {'address': address}, 'packages': 300}
+        resp = post('https://api.cdek.ru/v2/calculator/tariff', headers=header, json=payload).json()['delivery_sum']
+        return resp
 
     def get_webhooks(self):
         avitowebhook = 'https://api.avito.ru/messenger/v2/webhook'

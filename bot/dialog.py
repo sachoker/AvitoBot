@@ -1,5 +1,5 @@
 from bot.checker import check_one
-from bot import base, ROOT_DIR
+from bot import base, ROOT_DIR, bot
 from bot.loger import get_logger
 from datetime import datetime
 import gspread
@@ -30,10 +30,11 @@ class Client:
     generation = None
     modification = None
     prostavki = {}
+    dostavka = 0
     cost = 0
     comment = ''
     name = ''
-    index = 0
+    city = ''
     address = ''
     phone = ''
     chat_id = ''
@@ -43,6 +44,7 @@ class Client:
         self.sh = gc.open("Карточка клиента").sheet1
 
     def write_itog(self):
+        self.calculate_dostavka()
         now = datetime.now().strftime("%d-%m-%Y")
         self.sh.append_row([self.chat_id, now, self.generation, self.mark, self.model, self.modification,
                             self.prostavki.get('Передние проставки', ['Нет', 'Нет', 'Нет'])[0],
@@ -54,7 +56,7 @@ class Client:
                             self.prostavki.get('Передние проставки', ['Нет', 'Нет', 'Нет'])[2],
                             self.prostavki.get('Задние проставки', ['Нет', 'Нет', 'Нет'])[2],
                             self.prostavki.get('Удлинители', ['Нет', 'Нет', 'Нет'])[2],
-                            0,
+                            self.dostavka,
                             self.cost,
                             self.comment,
                             'Avito',
@@ -62,9 +64,12 @@ class Client:
                             None,
                             self.phone,
                             self.name,
-                            self.index,
+                            self.city,
                             self.address,
                             ])
+
+    def calculate_dostavka(self):
+        self.dostavka = bot.get_sdek_price(self.address)
 
     def add_prostavrka(self, prostavka: Prostavka):
         self.prostavki.update({prostavka.name: [prostavka.height, prostavka.articul, prostavka.cost]})
@@ -103,7 +108,9 @@ def generations(client, car):
         s = ''
         for cnt, i in enumerate(gen):
             s = s + str(cnt + 1) + ')' + f' {i}\n'
-        ans = yield "Выберите поколение вашего автомобиля(напишите его номер):\n" + s
+        ans = ''
+        while not ans.isdigit():
+            ans = yield "Выберите поколение вашего автомобиля(напишите его номер):\n" + s
         ans = int(ans)
         ans = gen[ans - 1]
         client.generation = ans
@@ -123,7 +130,9 @@ def modif(client, gen):
         s = ''
         for cnt, i in enumerate(mod):
             s = s + str(cnt + 1) + ')' + f' {i}\n'
-        ans = yield "Выберите модификацию вашего автомобиля(напишите его номер):\n" + s
+        ans = ''
+        while not ans.isdigit():
+            ans = yield "Выберите модификацию вашего автомобиля(напишите его номер):\n" + s
         ans = int(ans)
         ans = mod[ans - 1]
         client.modification = ans
@@ -154,7 +163,9 @@ def choose_direction(client, mod):
         dir.append("Передние и задние")
         for cnt, i in enumerate(dir):
             s = s + str(cnt + 1) + ')' + f' {i}\n'
-        ans = yield "Выберите тип проставок вашего автомобиля(напишите его номер):\n" + s
+        ans = ''
+        while not ans.isdigit():
+            ans = yield "Выберите тип проставок вашего автомобиля(напишите его номер):\n" + s
         ans = int(ans) - 1
         yield from get_height(client, prostavki, dir[ans])
     elif len(dir) == 3:
@@ -179,7 +190,9 @@ def get_height(client, prostavki, dir):
                 for cnt, j in enumerate(i.costs):
                     if j:
                         s += f'{cnt + 1})' + f'{cnt + 2}0mm\n'
-                h = yield f'Выберите высоту {dir}:\n' + s
+                h = 's'
+                while not h.isdigit():
+                    h = yield f'Выберите высоту {dir}:\n' + s
                 h = int(h) - 1
                 i.set_height(f'{h + 2}0mm')
                 i.set_cost(i.costs[h])
@@ -192,7 +205,9 @@ def get_height(client, prostavki, dir):
                 for cnt, j in enumerate(i.costs):
                     if j:
                         s += f'{cnt + 1})' + f'{cnt + 2}0mm\n'
-                h = yield f'Выберите высоту {i.name}:\n' + s
+                h = ''
+                while not h.isdigit():
+                    h = yield f'Выберите высоту {i.name}:\n' + s
                 h = int(h) - 1
                 i.set_height(f'{h + 2}0mm')
                 i.set_cost(i.costs[h])
@@ -204,7 +219,9 @@ def get_height(client, prostavki, dir):
             for cnt, j in enumerate(i.costs):
                 if j:
                     s += f'{cnt + 1})' + f'{cnt + 2}0mm\n'
-            h = yield f'Выберите высоту {i.name}:\n' + s
+            h = 'a'
+            while not h.isdigit():
+                h = yield f'Выберите высоту {i.name}:\n' + s
             h = int(h) - 1
             i.set_height(f'{h + 2}0mm')
             i.set_cost(i.costs[h])
@@ -218,7 +235,7 @@ def get_height(client, prostavki, dir):
 def get_dostavka(client: Client):
     s = f'Ваш заказ:\n{client.modification}\n'
     for cnt, i in enumerate(client.prostavki.items()):
-        s += f'{cnt + 1})' + i[0] + i[1][0] + str(i[1][2]) + '\n'
+        s += f'{cnt + 1}) ' + i[0] + " " + i[1][0] + " " + str(i[1][2]) + '\n'
     s += f'Общая стоймость:{client.cost}\n'
     s += 'Если у вас есть вопрос или коментарий для меня, напишите его, если нет, то напишите \"нет\"'
     ans = yield s
@@ -228,8 +245,8 @@ def get_dostavka(client: Client):
     client.name = ans
     ans = yield 'Введите свой номер телефона'
     client.phone = ans
-    ans = yield 'Введите почтовый индекс'
-    client.index = int(ans)
+    ans = yield 'Введите ваш город'
+    client.city = ans
     ans = yield 'Введите адрес пункта сдэк'
     client.address = ans
     client.write_itog()
@@ -237,4 +254,4 @@ def get_dostavka(client: Client):
 
 
 def get_itog(client):
-    yield f"Итоговая цена {client.cost}"
+    yield f"Доставка стоит примерно {client.dostavka}\nИтоговая цена {client.cost}"
