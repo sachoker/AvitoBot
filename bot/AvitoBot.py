@@ -19,7 +19,7 @@ class AvitoBot:
         self.get_avito_key()
         self.names = []
         self.base = base
-        #'204902716'
+        # '204902716'
         for i in self.get_all_chats('169306001'):
             self.names.append(i['id'])
         self.names.remove('u2i-2191175409-187456116')
@@ -56,7 +56,10 @@ class AvitoBot:
             pass
         elif chat_id in self.handlers.keys():
             try:
-                answer = self.handlers[chat_id].send(text)
+                if text[-1] == '?':
+                    answer = 'Все вопросы вы сможете задать после заполнения всех данных, я отвечу на них как только смогу'
+                else:
+                    answer = self.handlers[chat_id].send(text)
                 self.send_message(chat_id, user_id, answer)
             except StopIteration:
                 del self.handlers[chat_id]
