@@ -70,7 +70,8 @@ class Client:
                             ])
 
     def calculate_dostavka(self):
-        self.dostavka = sdekbot.get_sdek_price(self.address)
+        self.dostavka = int(sdekbot.get_sdek_price(self.address, self.city))
+        self.cost += self.dostavka
 
     def add_prostavrka(self, prostavka: Prostavka):
         self.prostavki.update({prostavka.name: [prostavka.height, prostavka.articul, prostavka.cost]})
@@ -105,7 +106,7 @@ def generations(client, car):
         if i.value == car and val not in gen:
             gen.append(val)
     if len(gen) > 1:
-        ans = 'Введите год выпуска вашего автомобиля(одним числом)'
+        ans = yield 'Введите год выпуска вашего автомобиля(одним числом)'
         if ans.isdigit():
             ans = int(ans)
             yrs = []
@@ -266,6 +267,7 @@ def get_dostavka(client: Client):
     client.city = ans
     ans = yield 'Введите адрес пункта сдэк'
     client.address = ans
+    client.calculate_dostavka()
     client.write_itog()
     yield from get_itog(client)
 

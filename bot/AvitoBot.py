@@ -39,7 +39,7 @@ class AvitoBot:
     def get_webhooks(self):
         avitowebhook = 'https://api.avito.ru/messenger/v2/webhook'
         header = {'Authorization': 'Bearer ' + self.avitoapikey}
-        payload = {'url': 'http://99b11ff9a78e.ngrok.io/bot'}
+        payload = {'url': 'http://e780a78baaa8.ngrok.io/bot'}
         resp = post(avitowebhook, headers=header, json=payload)
         self.logger.info(resp)
 

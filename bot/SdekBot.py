@@ -16,9 +16,12 @@ class SdekBot:
         print(a)
         self.sdek_key = 'Bearer ' + a['access_token']
 
-    def get_sdek_price(self, address):
+    def get_sdek_price(self, address, city):
         header = {'Authorization': self.sdek_key}
         payload = {'tariff_code': 136, 'from_location': {'postal_code': self.postal_from},
-                   'to_location': {'address': address}, 'packages': 300}
-        resp = post('https://api.edu.cdek.ru/v2/calculator/tariff', headers=header, json=payload).json()['delivery_sum']
+                   'to_location': {'city': city, 'address': address}, 'packages': {'weight': 300}}
+        try:
+            resp = post('https://api.edu.cdek.ru/v2/calculator/tariff', headers=header, json=payload).json()['total_sum']
+        except KeyError:
+            resp = 0
         return resp
