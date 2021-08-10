@@ -74,9 +74,11 @@ class Client:
         self.cost += self.dostavka
 
     def add_prostavrka(self, prostavka: Prostavka):
-        self.prostavki.update({prostavka.name: [prostavka.height, prostavka.articul, prostavka.cost]})
+        self.prostavki.update(
+            {prostavka.name: [prostavka.height, prostavka.articul, prostavka.cost, prostavka.photo, prostavka.comment]})
 
     def calculate_cost(self):
+        self.cost = 0
         for i in self.prostavki.values():
             self.cost += i[2]
 
@@ -174,7 +176,6 @@ def choose_direction(client, mod):
                                         int(base.cell(i.row, i.col_idx + 7).value or 0)],
                                        base.cell(i.row, i.col_idx + 2).value, base.cell(i.row, i.col_idx + 3),
                                        base.cell(i.row, i.col_idx + 8), base.cell(i.row, i.col_idx + 9),
-
                                        ))
     if len(dir) == 2:
         s = ''
@@ -253,7 +254,7 @@ def get_height(client, prostavki, dir):
 def get_dostavka(client: Client):
     s = f'Ваш заказ:\n{client.modification}\n'
     for cnt, i in enumerate(client.prostavki.items()):
-        s += f'{cnt + 1}) ' + i[0] + " " + i[1][0] + " " + str(i[1][2]) + '\n'
+        s += f'{cnt + 1}) ' + i[0] + " " + i[1][0] + " " + str(i[1][2]) + f'\nфото: {i[1][3]} ' + f'комментарий: {i[1][4]}\n'
     s += f'Общая стоймость:{client.cost}\n'
     s += 'Если у вас есть вопрос или коментарий для меня, напишите его, если нет, то напишите \"нет\"'
     ans = yield s
@@ -273,4 +274,4 @@ def get_dostavka(client: Client):
 
 
 def get_itog(client):
-    yield f"Доставка стоит примерно {client.dostavka}\nИтоговая цена {client.cost}"
+    yield f"Доставка стоит примерно {client.dostavka}\nИтоговая цена {client.cost}\nМожете написать сюда свои вопросы, я чуть позжу отвечу на них"
