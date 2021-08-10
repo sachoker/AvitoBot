@@ -1,6 +1,7 @@
 from bot.AvitoBot import AvitoBot
 from apscheduler.schedulers.background import BackgroundScheduler
 from openpyxl import load_workbook
+from bot.SdekBot import SdekBot
 import os
 
 sched = BackgroundScheduler()
@@ -10,6 +11,10 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 base = load_workbook(fr"{ROOT_DIR}\База для бота.xlsx").active
 client_id = '-iJiRUw8U1NukcfLAFzg'
 client_secret = 'QRdEx3eJAWYrLvbloIZZNdQWqnDGrPi0fYNoqJyW'
+sdek_client_id = 'EMscd6r9JnFiQ3bLoyjJY6eM78JrJceI'
+sdek_client_secret = 'PjLZkKBHEiLK3YsjtNrt3TGNG0ahs3kG'
+postal_from = '385000'
+sdekbot = SdekBot(sdek_client_id, sdek_client_secret, postal_from)
 
 from bot.dialog import dialog
 

@@ -1,8 +1,9 @@
 from bot.checker import check_one
-from bot import base, ROOT_DIR, bot
+from bot import base, ROOT_DIR, sdekbot
 from bot.loger import get_logger
 from datetime import datetime
 import gspread
+from re import search, findall
 
 logger = get_logger(__name__)
 
@@ -69,7 +70,7 @@ class Client:
                             ])
 
     def calculate_dostavka(self):
-        self.dostavka = bot.get_sdek_price(self.address)
+        self.dostavka = sdekbot.get_sdek_price(self.address)
 
     def add_prostavrka(self, prostavka: Prostavka):
         self.prostavki.update({prostavka.name: [prostavka.height, prostavka.articul, prostavka.cost]})
@@ -103,18 +104,34 @@ def generations(client, car):
         val = base.cell(i.row, i.col_idx + 1).value
         if i.value == car and val not in gen:
             gen.append(val)
-    logger.info(gen)
     if len(gen) > 1:
-        s = ''
-        for cnt, i in enumerate(gen):
-            s = s + str(cnt + 1) + ')' + f' {i}\n'
-        ans = ''
-        while not ans.isdigit():
-            ans = yield "Выберите поколение вашего автомобиля(напишите его номер):\n" + s
-        ans = int(ans)
-        ans = gen[ans - 1]
-        client.generation = ans
-        yield from modif(client, ans)
+        ans = 'Введите год выпуска вашего автомобиля(одним числом)'
+        if ans.isdigit():
+            ans = int(ans)
+            yrs = []
+            for i in gen:
+                if search(r'с \d{4} по \d{4}|\d{4}', i).group(0):
+                    a = findall(r'\d{4}', i)
+                    if len(a) == 1:
+                        if ans == int(a[0]):
+                            yrs.append(i)
+                    else:
+                        if int(a[1]) > ans > int(a[0]):
+                            yrs.append(i)
+            if yrs:
+                gen = yrs
+            s = ''
+            for cnt, i in enumerate(gen):
+                s = s + str(cnt + 1) + ')' + f' {i}\n'
+            ans = ''
+            while not ans.isdigit():
+                ans = yield "Выберите поколение вашего автомобиля(напишите его номер):\n" + s
+            ans = int(ans)
+            ans = gen[ans - 1]
+            client.generation = ans
+            yield from modif(client, ans)
+        else:
+            yield from generations(client, car)
     else:
         client.generation = gen[0]
         yield from modif(client, gen[0])
