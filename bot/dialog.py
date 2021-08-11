@@ -174,8 +174,8 @@ def choose_direction(client, mod):
                                         int(base.cell(i.row, i.col_idx + 5).value or 0),
                                         int(base.cell(i.row, i.col_idx + 6).value or 0),
                                         int(base.cell(i.row, i.col_idx + 7).value or 0)],
-                                       base.cell(i.row, i.col_idx + 2).value, base.cell(i.row, i.col_idx + 3),
-                                       base.cell(i.row, i.col_idx + 8), base.cell(i.row, i.col_idx + 9),
+                                       base.cell(i.row, i.col_idx + 2).value, base.cell(i.row, i.col_idx + 3).value,
+                                       base.cell(i.row, i.col_idx + 8).value, base.cell(i.row, i.col_idx + 9).value,
                                        ))
     if len(dir) == 2:
         s = ''

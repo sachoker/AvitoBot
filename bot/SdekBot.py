@@ -13,7 +13,6 @@ class SdekBot:
         params = {'grant_type': 'client_credentials', 'client_id': self.sdek_client_id,
                   'client_secret': self.sdek_client_secret}
         a = post('https://api.edu.cdek.ru/v2/oauth/token', params=params).json()
-        print(a)
         self.sdek_key = 'Bearer ' + a['access_token']
 
     def get_sdek_price(self, address, city):

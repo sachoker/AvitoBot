@@ -21,4 +21,4 @@ from bot.dialog import dialog
 bot = AvitoBot(client_id, client_secret, dialog, base)
 bot.get_webhooks()
 sched.add_job(bot.get_avito_key, 'interval', minutes=55)
-#sched.add_job(bot.get_sdek_key, 'interval', minutes=55)
+sched.add_job(sdekbot.get_sdek_key, 'interval', minutes=55)

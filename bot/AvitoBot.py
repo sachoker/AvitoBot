@@ -39,7 +39,7 @@ class AvitoBot:
     def get_webhooks(self):
         avitowebhook = 'https://api.avito.ru/messenger/v2/webhook'
         header = {'Authorization': 'Bearer ' + self.avitoapikey}
-        payload = {'url': 'http://e780a78baaa8.ngrok.io/bot'}
+        payload = {'url': 'http://badc6557d445.ngrok.io/bot'}
         resp = post(avitowebhook, headers=header, json=payload)
         self.logger.info(resp)
 
@@ -48,8 +48,12 @@ class AvitoBot:
         payload = {"type": "text", "message": {"text": text}}
         ans = post(f"https://api.avito.ru/messenger/v1/accounts/{user_id}/chats/{chat_id}/messages", headers=header,
                    json=payload)
+        if ans.status_code == 403:
+            self.get_avito_key()
+            sleep(2)
+            self.send_message(chat_id, user_id, text)
         self.logger.info(ans)
-
+# TODO: убрать спрос фио
     def message_handler(self, chat_id, user_id, text):
         self.logger.info(text)
         if chat_id in self.names:
